@@ -1,8 +1,16 @@
+name: AppScan CodeSweep
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
 jobs:
   codescan:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v3
 
       - name: Run AppScan CodeSweep
@@ -16,8 +24,10 @@ jobs:
           ASOC_KEY: ${{ secrets.ASOC_KEY }}
           ASOC_SECRET: ${{ secrets.ASOC_SECRET }}
 
-      - name: List SARIF files
-        run: ls -R AppScanCodeSweep/sarif || echo "No SARIF files found"
+      - name: Debug SARIF file
+        run: |
+          ls -R AppScanCodeSweep/sarif
+          head AppScanCodeSweep/sarif/output.sarif
 
       - name: Upload SARIF to GitHub
         uses: github/codeql-action/upload-sarif@v3
