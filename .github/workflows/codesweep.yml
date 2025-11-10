@@ -1,35 +1,29 @@
 name: AppScan CodeSweep
-
+ 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - '**'   # run on all branches
   pull_request:
-    branches: [ main ]
-
+    branches:
+      - '**'   # run on PRs to any branch
+  workflow_dispatch:  # allows manual trigger
+ 
 jobs:
-  codescan:
+  scan:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # fetch full history to avoid Git diff errors
+ 
       - name: Run AppScan CodeSweep
         uses: HCL-TECH-SOFTWARE/appscan-codesweep-action@v1
-        id: codesweep
         with:
-          output-format: sarif
           status: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ASOC_KEY: ${{ secrets.ASOC_KEY }}
-          ASOC_SECRET: ${{ secrets.ASOC_SECRET }}
-
-      - name: Debug SARIF file
-        run: |
-          ls -R AppScanCodeSweep/sarif
-          head AppScanCodeSweep/sarif/output.sarif
-
-      - name: Upload SARIF to GitHub
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: AppScanCodeSweep/sarif/output.sarif
+          ASOC_KEY: ${{ secrets.ASOC_KEY }}       # if using AppScan Cloud
+          ASOC_SECRET: ${{ secrets.ASOC_SECRET }} # if using AppScan Cloud
+ 
