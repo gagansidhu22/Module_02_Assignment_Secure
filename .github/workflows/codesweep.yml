@@ -22,6 +22,7 @@ jobs:
         uses: HCL-TECH-SOFTWARE/appscan-codesweep-action@v1
         with:
           status: true
+          include: "**/*.*"   # scans everything
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ASOC_KEY: ${{ secrets.ASOC_KEY }}       # if using AppScan Cloud
