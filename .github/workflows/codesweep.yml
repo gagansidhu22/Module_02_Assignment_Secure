@@ -1,15 +1,40 @@
-- name: Run AppScan CodeSweep
-  uses: HCL-TECH-SOFTWARE/appscan-codesweep-action@v1
-  with:
-    status: true
-    output-format: sarif
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    ASOC_KEY: ${{ secrets.ASOC_KEY }}
-    ASOC_SECRET: ${{ secrets.ASOC_SECRET }}
+name: AppScan CodeSweep
 
-- name: Upload CodeSweep report
-  uses: actions/upload-artifact@v3
-  with:
-    name: codesweep-report
-    path: AppScanCodeSweep/sarif/output.sarif
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: [ '**' ]
+  workflow_dispatch:
+
+jobs:
+  codesweep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Run AppScan CodeSweep
+        uses: HCL-TECH-SOFTWARE/appscan-codesweep-action@v1
+        id: codesweep
+        with:
+          status: true
+          output-format: sarif
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ASOC_KEY: ${{ secrets.ASOC_KEY }}
+          ASOC_SECRET: ${{ secrets.ASOC_SECRET }}
+
+      - name: Show CodeSweep results in Actions
+        run: |
+          SARIF_FILE="AppScanCodeSweep/sarif/output.sarif"
+          if [ -f "$SARIF_FILE" ]; then
+            echo "## AppScan CodeSweep Results" >> $GITHUB_STEP_SUMMARY
+            echo "| Severity | Message | File |" >> $GITHUB_STEP_SUMMARY
+            echo "|---------|---------|------|" >> $GITHUB_STEP_SUMMARY
+            jq -r '.runs[].results[] | "| \(.level) | \(.message.text) | \(.locations[0].physicalLocation.artifactLocation.uri) |"' $SARIF_FILE >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No CodeSweep results found." >> $GITHUB_STEP_SUMMARY
