@@ -1,3 +1,4 @@
+// import statements
 import * as readline from 'readline';
 import * as mysql from 'mysql';
 import { exec } from 'child_process';
