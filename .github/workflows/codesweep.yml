@@ -1,35 +1,15 @@
-name: AppScan CodeSweep
-
-on:
-  push:
-    branches:
-      - '**'
-  pull_request:
-    branches:
-      - '**'
-  workflow_dispatch:
-
-jobs:
-  scan:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - name: Run AppScan CodeSweep
         uses: HCL-TECH-SOFTWARE/appscan-codesweep-action@v1
         id: codesweep
         with:
-          status: false          # keep false to allow workflow to continue
-          output-format: sarif    # generate SARIF report
+          status: false
+          output-format: sarif
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ASOC_KEY: ${{ secrets.ASOC_KEY }}
           ASOC_SECRET: ${{ secrets.ASOC_SECRET }}
 
       - name: Upload SARIF to GitHub
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: codesweep-results.sarif   # path where CodeSweep outputs SARIF
+          sarif_file: AppScanCodeSweep/sarif/output.sarif
