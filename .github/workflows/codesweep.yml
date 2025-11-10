@@ -1,29 +1,57 @@
 name: AppScan CodeSweep
- 
+
 on:
   push:
-    branches:
-      - '**'   # run on all branches
+    branches: [ '**' ]
   pull_request:
-    branches:
-      - '**'   # run on PRs to any branch
-  workflow_dispatch:  # allows manual trigger
- 
+    branches: [ '**' ]
+  workflow_dispatch:
+
 jobs:
-  scan:
+  codesweep:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0   # fetch full history to avoid Git diff errors
- 
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: Run AppScan CodeSweep
         uses: HCL-TECH-SOFTWARE/appscan-codesweep-action@v1
+        id: codesweep
         with:
           status: true
+          output-format: sarif
+          # Optional: scan specific file types
+          # include: "**/*.js,**/*.ts,**/*.py"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ASOC_KEY: ${{ secrets.ASOC_KEY }}       # if using AppScan Cloud
-          ASOC_SECRET: ${{ secrets.ASOC_SECRET }} # if using AppScan Cloud
- 
+          ASOC_KEY: ${{ secrets.ASOC_KEY }}
+          ASOC_SECRET: ${{ secrets.ASOC_SECRET }}
+
+      - name: Debug SARIF
+        run: |
+          SARIF_FILE="AppScanCodeSweep/sarif/output.sarif"
+          if [ -f "$SARIF_FILE" ]; then
+            echo "SARIF file exists. Showing first 50 lines:"
+            head -n 50 $SARIF_FILE
+          else
+            echo "SARIF file not found!"
+          fi
+
+      - name: Show CodeSweep results in Actions
+        run: |
+          SARIF_FILE="AppScanCodeSweep/sarif/output.sarif"
+          if [ -f "$SARIF_FILE" ]; then
+            RESULTS_COUNT=$(jq '.runs[].results | length' $SARIF_FILE)
+            if [ "$RESULTS_COUNT" -gt 0 ]; then
+              echo "## AppScan CodeSweep Results" >> $GITHUB_STEP_SUMMARY
+              echo "| Severity | Message | File |" >> $GITHUB_STEP_SUMMARY
+              echo "|---------|---------|------|" >> $GITHUB_STEP_SUMMARY
+              jq -r '.runs[].results[] | "| \(.level) | \(.message.text) | \(.locations[0].physicalLocation.artifactLocation.uri) |"' $SARIF_FILE >> $GITHUB_STEP_SUMMARY
+            else
+              echo "No issues found by CodeSweep." >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "SARIF file not found!" >> $GITHUB_STEP_SUMMARY
